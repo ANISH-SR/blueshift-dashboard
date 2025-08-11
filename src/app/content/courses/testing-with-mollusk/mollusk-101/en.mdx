@@ -112,11 +112,13 @@ use solana_sdk::{
 
 // Payer account with lamports for transactions
 let payer = Pubkey::new_unique();
-let payer_account = Account::new(100_000_000, 0, &system_program::id());
+let mut payer_account = Account::default();
+payer_account.lamports = 100_000_000;
+payer_account.owner = system_program::id();
 
 // Uninitialized account with no lamports
 let uninitialized_account = Pubkey::new_unique();
-let uninitialized_account_account = Account::new(0, 0, &system_program::id());
+let uninitialized_account_account = Account::default();
 ```
 
 For `ProgramAccounts` that contain data, you have two construction approaches:
@@ -133,20 +135,15 @@ let lamports = mollusk
     .minimum_balance(data.len());
 
 let program_account = Pubkey::new_unique();
-let program_account_account = Account {
-    lamports,
-    data,
-    owner: ID, // The program's that owns the account
-    executable: false,
-    rent_epoch: 0,
-};
+let mut program_account_account = Account::default();
+program_account_account.lamports = lamports;
+program_account_account.data = data;
+program_account_account.owner = ID; // The program that owns the account
 ```
 
-Or using `AccountSharedData`:
+For accounts with data, you can initialize them like this:
 
 ```rust
-use solana_sdk::account::AccountSharedData;
-
 let data = vec![
     // Your serialized account data
 ];
@@ -156,8 +153,10 @@ let lamports = mollusk
     .minimum_balance(data.len());
 
 let program_account = Pubkey::new_unique();
-let mut program_account_account = AccountSharedData::new(lamports, data.len(), &ID);
-program_account_account.set_data_from_slice(&data);
+let mut program_account_account = Account::default();
+program_account_account.lamports = lamports;
+program_account_account.data = data.clone();
+program_account_account.owner = ID;
 ```
 
 Once you've created your accounts, compile them into the format Mollusk expects:
@@ -169,7 +168,7 @@ let accounts = [
 ];
 ```
 
-> When using AccountSharedData, remember to call `.into()` to convert it to the Account type that Mollusk requires for execution like this: `program_account_account.into()`.
+> When creating accounts, you can use `Account::default()` as a starting point and then set the specific fields you need.
 
 ### Instructions
 
