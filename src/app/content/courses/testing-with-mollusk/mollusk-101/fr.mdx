@@ -105,13 +105,15 @@ use solana_sdk::{
     system_program
 };
 
-// Payer account with lamports for transactions
+// Compte payeur avec des lamports pour les transactions
 let payer = Pubkey::new_unique();
-let payer_account = Account::new(100_000_000, 0, &system_program::id());
+let mut payer_account = Account::default();
+payer_account.lamports = 100_000_000;
+payer_account.owner = system_program::id();
 
-// Uninitialized account with no lamports
+// Compte non initialisé sans lamports
 let uninitialized_account = Pubkey::new_unique();
-let uninitialized_account_account = Account::new(0, 0, &system_program::id());
+let uninitialized_account_account = Account::default();
 ```
 
 Pour les `ProgramAccounts` qui contiennent des données, vous avez deux approches de construction :
@@ -128,22 +130,17 @@ let lamports = mollusk
     .minimum_balance(data.len());
 
 let program_account = Pubkey::new_unique();
-let program_account_account = Account {
-    lamports,
-    data,
-    owner: ID, // The program's that owns the account
-    executable: false,
-    rent_epoch: 0,
-};
+let mut program_account_account = Account::default();
+program_account_account.lamports = lamports;
+program_account_account.data = data;
+program_account_account.owner = ID; // Le programme qui possède le compte
 ```
 
-Ou en utilisant `AccountSharedData` :
+Pour les comptes avec des données, vous pouvez les initialiser comme ceci :
 
 ```rust
-use solana_sdk::account::AccountSharedData;
-
 let data = vec![
-    // Your serialized account data
+    // Vos données de compte sérialisées
 ];
 let lamports = mollusk
     .sysvars
@@ -151,8 +148,10 @@ let lamports = mollusk
     .minimum_balance(data.len());
 
 let program_account = Pubkey::new_unique();
-let mut program_account_account = AccountSharedData::new(lamports, data.len(), &ID);
-program_account_account.set_data_from_slice(&data);
+let mut program_account_account = Account::default();
+program_account_account.lamports = lamports;
+program_account_account.data = data.clone();
+program_account_account.owner = ID;
 ```
 
 Une fois vos comptes créés, compilez-les dans le format attendu par Mollusk :
@@ -164,7 +163,7 @@ let accounts = [
 ];
 ```
 
-> Lorsque vous utilisez `AccountSharedData` n'oubliez pas d'appeler `.into()` pour le convertir au type `Account` requis par Mollusk pour l'exécution, comme ceci : `program_account_account.into()`.
+> Lors de la création de comptes, vous pouvez utiliser `Account::default()` comme point de départ, puis définir les champs spécifiques dont vous avez besoin.
 
 ### Instructions
 
